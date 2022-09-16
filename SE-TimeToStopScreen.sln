@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32901.82
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SE-TimeToStopScreen", "SE-TimeToStopScreen.csproj", "{C8F865FA-E7BB-412B-9EB2-3C17E3E380FD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C8F865FA-E7BB-412B-9EB2-3C17E3E380FD}.Debug|x64.ActiveCfg = Debug|x64
+		{C8F865FA-E7BB-412B-9EB2-3C17E3E380FD}.Debug|x64.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5FE4D060-4974-4A8F-B7E9-4EB6FD93CE6D}
+	EndGlobalSection
+EndGlobal
