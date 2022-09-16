@@ -65,6 +65,7 @@ namespace IngameScript
             // Set up drawing surface and viewport
             _controlSeat = GridTerminalSystem.GetBlockWithName("Control Seat [TTS]") as IMyCockpit;
             _drawingSurface = _controlSeat.GetSurface(0);
+            Echo(_drawingSurface.ToString());
             _viewport = new RectangleF(
                 (_drawingSurface.TextureSize - _drawingSurface.SurfaceSize) / 2f,
                 _drawingSurface.SurfaceSize
@@ -101,7 +102,7 @@ namespace IngameScript
             {
                 var frame = _drawingSurface.DrawFrame();
 
-                drawSprites();
+                drawSprites(ref frame);
 
                 frame.Dispose();
             }
@@ -110,12 +111,90 @@ namespace IngameScript
         /// <summary>
         /// Draws all sprites for the current frame.
         /// </summary>
-        private void drawSprites()
+        private void drawSprites(ref MySpriteDrawFrame frame)
         {
+            // Add sprite for background
+            var sprite = new MySprite()
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Grid",
+                Position = _viewport.Center,
+                Size = _viewport.Size,
+                Color = _drawingSurface.ScriptForegroundColor.Alpha(0.66f),
+                Alignment = TextAlignment.CENTER
+            };
+            frame.Add(sprite);
 
+            var position = new Vector2(256, 20) + _viewport.Position;
+            List<double> physicsValues = timeToStop();
 
-            
+            // Time-To-Stop
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "Time-To-Stop: " + physicsValues[0].ToString() + " s",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 20);
+            // Time-To-Top
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "Time-To-Top: " + physicsValues[1].ToString() + " s",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 20);
+            // Acceleration
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "Acceleration: " + physicsValues[2].ToString() + " m/s^2",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 20);
+            // Velocity
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "Velocity: " + physicsValues[3].ToString() + " m/s",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 20);
+            // Inertia
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "Interita: " + physicsValues[4].ToString() + " Kgm/s",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 20);
         }
+
 
         /// <summary>
         /// Calculates the current Time-To-Stop and other current physics values of <c>_controlSeat</c>'s grid, based on current change in momentum and velocity, and returns it in a list of doubles.
@@ -130,7 +209,13 @@ namespace IngameScript
         /// </returns>
         private List<double> timeToStop()
         {
-            return null;
+            List<double> result = new List<double>();
+            result.Add(0);
+            result.Add(0);
+            result.Add(0);
+            result.Add(0);
+            result.Add(0);
+            return result;
         }
 
 
