@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using VRage;
 using VRage.Collections;
 using VRage.Game;
@@ -46,8 +47,7 @@ namespace IngameScript
         IMyTextSurface _drawingSurface;
         RectangleF _viewport;
         IMyCockpit _controlSeat;
-        MyShipVelocities velocities;
-        int previousMomentum;
+        Vector3D previousMomentum;
 
         public Program()
         {
@@ -71,9 +71,9 @@ namespace IngameScript
                 _drawingSurface.SurfaceSize
             );
 
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
-            previousMomentum = 0;
+            previousMomentum = new Vector3D();
         }
 
         public void Save()
@@ -98,7 +98,7 @@ namespace IngameScript
             // The method itself is required, but the arguments above
             // can be removed if not needed.
 
-            if ((updateSource & UpdateType.Update100) != 0)
+            if ((updateSource & UpdateType.Update10) != 0)
             {
                 var frame = _drawingSurface.DrawFrame();
 
@@ -126,7 +126,8 @@ namespace IngameScript
             frame.Add(sprite);
 
             var position = new Vector2(256, 20) + _viewport.Position;
-            List<double> physicsValues = timeToStop();
+            List<Vector3D> physicsValues = new List<Vector3D>();
+            timeToStop(ref physicsValues);
 
             // Time-To-Stop
             sprite = new MySprite()
@@ -205,17 +206,39 @@ namespace IngameScript
         /// 1 - Current Time-To-Top in seconds.
         /// 2 - Current acceleration in m/s^2.
         /// 3 - Current velocity in m/s
-        /// 4 - Current inertia in kg*m/s.
+        /// 4 - Current momentum in kg*m/s.
         /// </returns>
-        private List<double> timeToStop()
+        private void timeToStop(ref List<Vector3D> result)
         {
-            List<double> result = new List<double>();
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            return result;
+            double mass = _controlSeat.CalculateShipMass().TotalMass;
+            Vector3D velocity = _controlSeat.GetShipVelocities().LinearVelocity;
+            Vector3D currentMomentum = Vector3D.Multiply(velocity, mass);
+            Vector3D deltaMomentum = currentMomentum - previousMomentum;
+            previousMomentum = currentMomentum;
+            Vector3D acceleration = Vector3D.Divide(deltaMomentum, mass);
+            Vector3D timeToStop = Vector3D.Divide(velocity, Vector3D.Negate(acceleration));
+            Vector3D timeToTop = Vector3D.Add(velocity, new Vector3D(-100, -100, -100));
+            vector3DRound(ref timeToStop);
+            result.Add(timeToStop);
+            vector3DRound(ref timeToTop);
+            result.Add(timeToTop);
+            vector3DRound(ref acceleration);
+            result.Add(acceleration);
+            vector3DRound(ref velocity);
+            result.Add(velocity);
+            vector3DRound(ref currentMomentum);
+            result.Add(currentMomentum);
+        }
+
+        /// <summary>
+        /// A private utility method for rounding a 3 Dimensional Vector to the nearest whole number.
+        /// </summary>
+        /// <param name="vector"></param>
+        private void vector3DRound(ref Vector3D vector)
+        {
+            vector.X = Math.Round(vector.X);
+            vector.Y = Math.Round(vector.Y);
+            vector.Z = Math.Round(vector.Z);
         }
 
 
