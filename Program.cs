@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using VRage;
 using VRage.Collections;
 using VRage.Game;
@@ -46,8 +47,7 @@ namespace IngameScript
         IMyTextSurface _drawingSurface;
         RectangleF _viewport;
         IMyCockpit _controlSeat;
-        MyShipVelocities velocities;
-        int previousMomentum;
+        List<IMyThrust> _thrusters;
 
         public Program()
         {
@@ -71,9 +71,10 @@ namespace IngameScript
                 _drawingSurface.SurfaceSize
             );
 
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
-            previousMomentum = 0;
+            _thrusters = new List<IMyThrust>();
+            GridTerminalSystem.GetBlocksOfType<IMyThrust>(_thrusters);
         }
 
         public void Save()
@@ -98,11 +99,13 @@ namespace IngameScript
             // The method itself is required, but the arguments above
             // can be removed if not needed.
 
-            if ((updateSource & UpdateType.Update100) != 0)
+            if ((updateSource & UpdateType.Update10) != 0)
             {
                 var frame = _drawingSurface.DrawFrame();
 
-                drawSprites(ref frame);
+                drawSpritesTTS(ref frame);
+                drawSpritesDTS(ref frame);
+                drawSpritesDockSensor(ref frame);
 
                 frame.Dispose();
             }
@@ -111,7 +114,7 @@ namespace IngameScript
         /// <summary>
         /// Draws all sprites for the current frame.
         /// </summary>
-        private void drawSprites(ref MySpriteDrawFrame frame)
+        private void drawSpritesTTS(ref MySpriteDrawFrame frame)
         {
             // Add sprite for background
             var sprite = new MySprite()
@@ -125,14 +128,13 @@ namespace IngameScript
             };
             frame.Add(sprite);
 
-            var position = new Vector2(256, 20) + _viewport.Position;
-            List<double> physicsValues = timeToStop();
+            var position = new Vector2(256, 5) + _viewport.Position;
 
             // Time-To-Stop
             sprite = new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = "Time-To-Stop: " + physicsValues[0].ToString() + " s",
+                Data = " | Time-To-Stop | ",
                 Position = position,
                 RotationOrScale = 0.8f,
                 Color = Color.White,
@@ -140,84 +142,164 @@ namespace IngameScript
                 FontId = "White"
             };
             frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Time-To-Top
+            position += new Vector2(0, 50);
+
+            // Time-To-Stop
             sprite = new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = "Time-To-Top: " + physicsValues[1].ToString() + " s",
+                Data = timeToStop().ToString() + " s",
                 Position = position,
-                RotationOrScale = 0.8f,
+                RotationOrScale = 2.0f,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             };
             frame.Add(sprite);
             position += new Vector2(0, 20);
-            // Acceleration
-            sprite = new MySprite()
+
+        }
+
+        private void drawSpritesDTS(ref MySpriteDrawFrame frame)
+        {
+            var position = new Vector2(422, 6) + _viewport.Position;
+            var sprite = new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = "Acceleration: " + physicsValues[2].ToString() + " m/s^2",
+                Data = " | Distance to Stop | ",
                 Position = position,
-                RotationOrScale = 0.8f,
+                RotationOrScale = 0.7f,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             };
             frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Velocity
-            sprite = new MySprite()
-            {
+        }
+
+        private void drawSpritesDockSensor(ref MySpriteDrawFrame frame)
+        {
+            List<IMyShipConnector> connectors = new List<IMyShipConnector>();
+            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(connectors);
+
+            var position = new Vector2(90, 6) + _viewport.Position;
+            var sprite = new MySprite()
+            { 
                 Type = SpriteType.TEXT,
-                Data = "Velocity: " + physicsValues[3].ToString() + " m/s",
+                Data = " | Connector Status | ",
                 Position = position,
-                RotationOrScale = 0.8f,
+                RotationOrScale = 0.7f,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             };
             frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Inertia
-            sprite = new MySprite()
+            position += new Vector2(0, 30);
+
+            foreach (IMyShipConnector connector in connectors)
             {
-                Type = SpriteType.TEXT,
-                Data = "Interita: " + physicsValues[4].ToString() + " Kgm/s",
-                Position = position,
-                RotationOrScale = 0.8f,
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            };
-            frame.Add(sprite);
-            position += new Vector2(0, 20);
+                if (connector.IsSameConstructAs(Me))
+                {
+                    switch (connector.Status)
+                    {
+                        case MyShipConnectorStatus.Connectable:
+                            sprite = new MySprite()
+                            {
+                                Type = SpriteType.TEXT,
+                                Data = "In Range",
+                                Position = position,
+                                RotationOrScale = 0.7f,
+                                Color = Color.Yellow,
+                                Alignment = TextAlignment.CENTER,
+                                FontId = "White"
+                            };
+                            frame.Add(sprite);
+                            position += new Vector2(0, 20);
+                            break;
+
+                        case MyShipConnectorStatus.Connected:
+                            sprite = new MySprite()
+                            {
+                                Type = SpriteType.TEXT,
+                                Data = "Connected To",
+                                Position = position,
+                                RotationOrScale = 0.7f,
+                                Color = Color.Green,
+                                Alignment = TextAlignment.CENTER,
+                                FontId = "White"
+                            };
+                            frame.Add(sprite);
+                            position += new Vector2(0, 20);
+                            sprite = new MySprite()
+                            {
+                                Type = SpriteType.TEXT,
+                                Data = connector.OtherConnector.CubeGrid.CustomName,
+                                Position = position,
+                                RotationOrScale = 0.5f,
+                                Color = Color.Green,
+                                Alignment = TextAlignment.CENTER,
+                                FontId = "White"
+                            };
+                            frame.Add(sprite);
+                            position += new Vector2(0, 20);
+                            break;
+
+                        case MyShipConnectorStatus.Unconnected:
+                            sprite = new MySprite()
+                            {
+                                Type = SpriteType.TEXT,
+                                Data = "Disconnected",
+                                Position = position,
+                                RotationOrScale = 0.7f,
+                                Color = Color.Blue,
+                                Alignment = TextAlignment.CENTER,
+                                FontId = "White"
+                            };
+                            frame.Add(sprite);
+                            position += new Vector2(0, 20);
+                            break;
+
+                        default:
+                            sprite = new MySprite()
+                            {
+                                Type = SpriteType.TEXT,
+                                Data = connector.CustomName + " Error",
+                                Position = position,
+                                RotationOrScale = 0.7f,
+                                Color = Color.Red,
+                                Alignment = TextAlignment.CENTER,
+                                FontId = "White"
+                            };
+                            frame.Add(sprite);
+                            position += new Vector2(0, 20);
+                            break;
+                    }
+                }
+            }
         }
 
 
         /// <summary>
-        /// Calculates the current Time-To-Stop and other current physics values of <c>_controlSeat</c>'s grid, based on current change in momentum and velocity, and returns it in a list of doubles.
+        /// Calculates the Time-To-Stop of the current grid based on current thrust.
         /// </summary>
         /// <returns>
-        /// A list of doubles where the indexes are as follows:
-        /// 0 - Current Time-To-Stop in seconds.
-        /// 1 - Current Time-To-Top in seconds.
-        /// 2 - Current acceleration in m/s^2.
-        /// 3 - Current velocity in m/s
-        /// 4 - Current inertia in kg*m/s.
+        /// A double representing the ship's Time-To-Stop in seconds.
         /// </returns>
-        private List<double> timeToStop()
+        private double timeToStop()
         {
-            List<double> result = new List<double>();
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            result.Add(0);
-            return result;
+            double speed = _controlSeat.GetShipSpeed();
+            Vector3D velocities = _controlSeat.GetShipVelocities().LinearVelocity;
+            velocities.Normalize();
+            double currentStoppingThrust = 0;
+            
+            foreach (IMyThrust thruster in _thrusters)
+            {
+                if (thruster.GridThrustDirection != new Vector3I(Vector3D.Forward)) { continue; }
+                currentStoppingThrust += thruster.MaxEffectiveThrust;
+            }
+
+            double currentStoppingAcceleration = currentStoppingThrust / _controlSeat.CalculateShipMass().TotalMass;
+            return Math.Round(speed / currentStoppingAcceleration);
+
         }
-
-
     }
 }
