@@ -48,6 +48,7 @@ namespace IngameScript
         RectangleF _viewport;
         IMyCockpit _controlSeat;
         Vector3D previousMomentum;
+        List<IMyThrust> _thrusters;
 
         public Program()
         {
@@ -74,6 +75,9 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
             previousMomentum = new Vector3D();
+
+            _thrusters = new List<IMyThrust>();
+            GridTerminalSystem.GetBlocksOfType<IMyThrust>(_thrusters);
         }
 
         public void Save()
@@ -126,66 +130,12 @@ namespace IngameScript
             frame.Add(sprite);
 
             var position = new Vector2(256, 20) + _viewport.Position;
-            List<Vector3D> physicsValues = new List<Vector3D>();
-            timeToStop(ref physicsValues);
-
+            
             // Time-To-Stop
             sprite = new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = "Time-To-Stop: " + physicsValues[0].ToString() + " s",
-                Position = position,
-                RotationOrScale = 0.8f,
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            };
-            frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Time-To-Top
-            sprite = new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = "Time-To-Top: " + physicsValues[1].ToString() + " s",
-                Position = position,
-                RotationOrScale = 0.8f,
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            };
-            frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Acceleration
-            sprite = new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = "Acceleration: " + physicsValues[2].ToString() + " m/s^2",
-                Position = position,
-                RotationOrScale = 0.8f,
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            };
-            frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Velocity
-            sprite = new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = "Velocity: " + physicsValues[3].ToString() + " m/s",
-                Position = position,
-                RotationOrScale = 0.8f,
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            };
-            frame.Add(sprite);
-            position += new Vector2(0, 20);
-            // Inertia
-            sprite = new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = "Interita: " + physicsValues[4].ToString() + " Kgm/s",
+                Data = "Time-To-Stop: " + timeToStop().ToString() + " s",
                 Position = position,
                 RotationOrScale = 0.8f,
                 Color = Color.White,
@@ -208,39 +158,19 @@ namespace IngameScript
         /// 3 - Current velocity in m/s
         /// 4 - Current momentum in kg*m/s.
         /// </returns>
-        private void timeToStop(ref List<Vector3D> result)
+        private double timeToStop()
         {
-            double mass = _controlSeat.CalculateShipMass().TotalMass;
-            Vector3D velocity = _controlSeat.GetShipVelocities().LinearVelocity;
-            Vector3D currentMomentum = Vector3D.Multiply(velocity, mass);
-            Vector3D deltaMomentum = currentMomentum - previousMomentum;
-            previousMomentum = currentMomentum;
-            Vector3D acceleration = Vector3D.Divide(deltaMomentum, mass);
-            Vector3D timeToStop = Vector3D.Divide(velocity, Vector3D.Negate(acceleration));
-            Vector3D timeToTop = Vector3D.Add(velocity, new Vector3D(-100, -100, -100));
-            vector3DRound(ref timeToStop);
-            result.Add(timeToStop);
-            vector3DRound(ref timeToTop);
-            result.Add(timeToTop);
-            vector3DRound(ref acceleration);
-            result.Add(acceleration);
-            vector3DRound(ref velocity);
-            result.Add(velocity);
-            vector3DRound(ref currentMomentum);
-            result.Add(currentMomentum);
+            double speed = _controlSeat.GetShipSpeed();
+            double currentStoppingThrust = 0;
+            
+            foreach (IMyThrust thruster in _thrusters)
+            {
+                currentStoppingThrust += thruster.CurrentThrust;
+            }
+
+            double currentStoppingAcceleration = currentStoppingThrust / _controlSeat.CalculateShipMass().TotalMass;
+            return (-1 * speed) / currentStoppingAcceleration;
+
         }
-
-        /// <summary>
-        /// A private utility method for rounding a 3 Dimensional Vector to the nearest whole number.
-        /// </summary>
-        /// <param name="vector"></param>
-        private void vector3DRound(ref Vector3D vector)
-        {
-            vector.X = Math.Round(vector.X);
-            vector.Y = Math.Round(vector.Y);
-            vector.Z = Math.Round(vector.Z);
-        }
-
-
     }
 }
