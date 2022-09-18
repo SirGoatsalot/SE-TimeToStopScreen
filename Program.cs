@@ -44,8 +44,8 @@ namespace IngameScript
         //
         // to learn more about ingame scripts.
 
-        IMyTextSurface _drawingSurface;
-        RectangleF _viewport;
+        List<IMyTextSurface> _drawingSurfaces;
+        List<RectangleF> _viewports;
         IMyCockpit _controlSeat;
         List<IMyThrust> _thrusters;
 
@@ -64,12 +64,16 @@ namespace IngameScript
 
             // Set up drawing surface and viewport
             _controlSeat = GridTerminalSystem.GetBlockWithName("Control Seat [TTS]") as IMyCockpit;
-            _drawingSurface = _controlSeat.GetSurface(0);
-            Echo(_drawingSurface.ToString());
-            _viewport = new RectangleF(
-                (_drawingSurface.TextureSize - _drawingSurface.SurfaceSize) / 2f,
-                _drawingSurface.SurfaceSize
-            );
+            _viewports = new List<RectangleF>();
+            _drawingSurfaces = new List<IMyTextSurface>();
+            for (int i = 0; i < 5; i++)
+            {
+                _drawingSurfaces.Add(_controlSeat.GetSurface(i));
+                _viewports.Add(new RectangleF(
+                    (_drawingSurfaces[i].TextureSize - _drawingSurfaces[i].SurfaceSize) / 2f,
+                    _drawingSurfaces[i].SurfaceSize
+                ));
+            }
 
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
@@ -101,33 +105,46 @@ namespace IngameScript
 
             if ((updateSource & UpdateType.Update10) != 0)
             {
-                var frame = _drawingSurface.DrawFrame();
-
-                drawSpritesTTS(ref frame);
-                // drawSpritesDockSensor(ref frame);
-
+                
+                // Top Center Screen
+                var frame = _drawingSurfaces[0].DrawFrame();
+                drawSpritesTTS(ref frame, _viewports[0], _drawingSurfaces[0]);
                 frame.Dispose();
+
+                // Top Left Screen
+                frame = _drawingSurfaces[1].DrawFrame();
+                drawSpritesDockSensor(ref frame, _viewports[1], _drawingSurfaces[1]);
+                frame.Dispose();
+
+                // Top Right Screen
+
+
+                // Keyboard
+
+                // Bottom Left Screen
+
+                // Bottom Right Screen
             }
         }
 
         /// <summary>
         /// Draws all sprites for the current frame.
         /// </summary>
-        private void drawSpritesTTS(ref MySpriteDrawFrame frame)
+        private void drawSpritesTTS(ref MySpriteDrawFrame frame, RectangleF viewport, IMyTextSurface drawingSurface)
         {
             // Add sprite for background
             var sprite = new MySprite()
             {
                 Type = SpriteType.TEXTURE,
                 Data = "Grid",
-                Position = _viewport.Center,
-                Size = _viewport.Size,
-                Color = _drawingSurface.ScriptForegroundColor.Alpha(0.66f),
+                Position = viewport.Center,
+                Size = viewport.Size,
+                Color = drawingSurface.ScriptForegroundColor.Alpha(0.66f),
                 Alignment = TextAlignment.CENTER
             };
             frame.Add(sprite);
 
-            var position = new Vector2(_drawingSurface.SurfaceSize.X / 4, 5) + _viewport.Position;
+            var position = new Vector2(drawingSurface.SurfaceSize.X / 4, 5) + viewport.Position;
             List<double> TTSandDTS = timeToStop();
 
             // Time-To-Stop Title
@@ -156,7 +173,7 @@ namespace IngameScript
                 FontId = "White"
             };
             frame.Add(sprite);
-            position += new Vector2(_drawingSurface.SurfaceSize.X / 2, -30);
+            position += new Vector2(drawingSurface.SurfaceSize.X / 2, -30);
 
             // Distance To Stop Title
             sprite = new MySprite()
@@ -172,6 +189,7 @@ namespace IngameScript
             frame.Add(sprite);
             position += new Vector2(0, 30);
 
+            // Distance To Stop
             sprite = new MySprite()
             {
                 Type = SpriteType.TEXT,
@@ -185,18 +203,30 @@ namespace IngameScript
             frame.Add(sprite);
         }
 
-        private void drawSpritesDockSensor(ref MySpriteDrawFrame frame)
+        private void drawSpritesDockSensor(ref MySpriteDrawFrame frame, RectangleF viewport, IMyTextSurface drawingSurface)
         {
             List<IMyShipConnector> connectors = new List<IMyShipConnector>();
             GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(connectors);
 
-            var position = new Vector2(_drawingSurface.SurfaceSize.X / 8, 6) + _viewport.Position;
+            // Add sprite for background
             var sprite = new MySprite()
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Grid",
+                Position = viewport.Center,
+                Size = viewport.Size,
+                Color = drawingSurface.ScriptForegroundColor.Alpha(0.66f),
+                Alignment = TextAlignment.CENTER
+            };
+            frame.Add(sprite);
+
+            var position = new Vector2(drawingSurface.SurfaceSize.X / 2, 5) + viewport.Position;
+            sprite = new MySprite()
             { 
                 Type = SpriteType.TEXT,
                 Data = " | Connector Status | ",
                 Position = position,
-                RotationOrScale = 0.2f,
+                RotationOrScale = 0.8f,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
@@ -216,7 +246,7 @@ namespace IngameScript
                                 Type = SpriteType.TEXT,
                                 Data = "In Range",
                                 Position = position,
-                                RotationOrScale = 0.2f,
+                                RotationOrScale = 0.8f,
                                 Color = Color.Yellow,
                                 Alignment = TextAlignment.CENTER,
                                 FontId = "White"
@@ -231,7 +261,7 @@ namespace IngameScript
                                 Type = SpriteType.TEXT,
                                 Data = "Connected To",
                                 Position = position,
-                                RotationOrScale = 0.2f,
+                                RotationOrScale = 0.8f,
                                 Color = Color.Green,
                                 Alignment = TextAlignment.CENTER,
                                 FontId = "White"
@@ -243,7 +273,7 @@ namespace IngameScript
                                 Type = SpriteType.TEXT,
                                 Data = connector.OtherConnector.CubeGrid.CustomName,
                                 Position = position,
-                                RotationOrScale = 0.2f,
+                                RotationOrScale = 0.8f,
                                 Color = Color.Green,
                                 Alignment = TextAlignment.CENTER,
                                 FontId = "White"
@@ -258,7 +288,7 @@ namespace IngameScript
                                 Type = SpriteType.TEXT,
                                 Data = "Disconnected",
                                 Position = position,
-                                RotationOrScale = 0.2f,
+                                RotationOrScale = 0.8f,
                                 Color = Color.Blue,
                                 Alignment = TextAlignment.CENTER,
                                 FontId = "White"
@@ -273,7 +303,7 @@ namespace IngameScript
                                 Type = SpriteType.TEXT,
                                 Data = connector.CustomName + " Error",
                                 Position = position,
-                                RotationOrScale = 0.2f,
+                                RotationOrScale = 0.8f,
                                 Color = Color.Red,
                                 Alignment = TextAlignment.CENTER,
                                 FontId = "White"
