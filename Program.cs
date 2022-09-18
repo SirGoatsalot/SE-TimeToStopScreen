@@ -288,15 +288,10 @@ namespace IngameScript
 
 
         /// <summary>
-        /// Calculates the current Time-To-Stop and other current physics values of <c>_controlSeat</c>'s grid, based on current change in momentum and velocity, and returns it in a list of doubles.
+        /// Calculates the Time-To-Stop of the current grid based on current thrust.
         /// </summary>
         /// <returns>
-        /// A list of doubles where the indexes are as follows:
-        /// 0 - Current Time-To-Stop in seconds.
-        /// 1 - Current Time-To-Top in seconds.
-        /// 2 - Current acceleration in m/s^2.
-        /// 3 - Current velocity in m/s
-        /// 4 - Current momentum in kg*m/s.
+        /// A double representing the ship's Time-To-Stop in seconds.
         /// </returns>
         private List<double> timeToStop()
         {
