@@ -247,6 +247,34 @@ namespace IngameScript
                 FontId = "White"
             };
             frame.Add(sprite);
+            position += new Vector2(drawingSurface.SurfaceSize.X / 2, -30);
+
+            // Current Battery Percent Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "| Battery % |",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+            // Current Battery Percent
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = batteryPercent().ToString() + " %",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
         }
 
         private void drawSpritesDockSensor(ref MySpriteDrawFrame frame, RectangleF viewport, IMyTextSurface drawingSurface)
@@ -391,6 +419,60 @@ namespace IngameScript
             frame.Add(sprite);
             position += new Vector2(0, 30);
 
+            // Current Usage Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = " | Current Usage | ",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+            // Current Usage Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = " Mw",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+            // Average Usage Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = " | Avg. Usage | ",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = batteryPercent().ToString() + " KwH/s",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+
         }
 
 
@@ -437,5 +519,21 @@ namespace IngameScript
 
             return totalPercent * 100.0;
         }
+
+        /// <summary>
+        /// Calculates the current total percent charge of the ship's batteries.
+        /// </summary>
+        /// <returns>battery percent as a double</returns>
+        private double batteryPercent()
+        {
+            if (_batteries.Count == 0) { return 0.0f; }
+            double totalChargePercent = 1.00f;
+            foreach (IMyBatteryBlock battery in _batteries)
+            {
+                totalChargePercent *= battery.CurrentStoredPower / battery.MaxStoredPower;
+            }
+            return Math.Round(totalChargePercent * 100.0f);
+        }
+
     }
 }
