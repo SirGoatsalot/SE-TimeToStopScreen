@@ -1,5 +1,9 @@
 ﻿R e a d m e
 -----------
 
-In this file you can include any instructions or other comments you want to have injected onto the 
-top of your final script. You can safely delete this file if you do not want any such comments.
+Name Cockpit - "Control Seat [TTS]"
+Make all screens displaying a script. For the script, select "None"
+
+TTS/DTS/Mass/Fill% Screen
+ - Add all blocks to account for filled% to a group named "Cargo [TTS]"
+

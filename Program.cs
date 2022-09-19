@@ -48,6 +48,9 @@ namespace IngameScript
         List<RectangleF> _viewports;
         IMyCockpit _controlSeat;
         List<IMyThrust> _thrusters;
+        List<IMyShipConnector> _connectors;
+        List<IMyTerminalBlock> _cargoBlocks;
+        List<IMyBatteryBlock> _batteries;
 
         public Program()
         {
@@ -77,8 +80,21 @@ namespace IngameScript
 
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
+            // Get ship thrusters
             _thrusters = new List<IMyThrust>();
             GridTerminalSystem.GetBlocksOfType<IMyThrust>(_thrusters);
+
+            // Get ship connectors
+            _connectors = new List<IMyShipConnector>();
+            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(_connectors);
+
+            // Get ship cargo blocks
+            _cargoBlocks = new List<IMyTerminalBlock>();
+            GridTerminalSystem.GetBlockGroupWithName("Cargo [TTS]").GetBlocks(_cargoBlocks);
+
+            // Get ship batteries
+            _batteries = new List<IMyBatteryBlock>();
+            GridTerminalSystem.GetBlocksOfType<IMyBatteryBlock>(_batteries);
         }
 
         public void Save()
@@ -117,7 +133,9 @@ namespace IngameScript
                 frame.Dispose();
 
                 // Top Right Screen
-
+                frame = _drawingSurfaces[2].DrawFrame();
+                drawSpritesPowerSystems(ref frame, _viewports[2], _drawingSurfaces[2]);
+                frame.Dispose();
 
                 // Keyboard
 
@@ -201,13 +219,38 @@ namespace IngameScript
                 FontId = "White"
             };
             frame.Add(sprite);
+            position += new Vector2(-drawingSurface.SurfaceSize.X / 2, (drawingSurface.SurfaceSize.Y / 2) - 30);
+
+            // Current Fill Percent Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = "| Fill % |",
+                Position = position,
+                RotationOrScale = 1.0f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+            // Current Fill Percent
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = fillPercent().ToString() + " %",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
         }
 
         private void drawSpritesDockSensor(ref MySpriteDrawFrame frame, RectangleF viewport, IMyTextSurface drawingSurface)
         {
-            List<IMyShipConnector> connectors = new List<IMyShipConnector>();
-            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(connectors);
-
             // Add sprite for background
             var sprite = new MySprite()
             {
@@ -220,13 +263,14 @@ namespace IngameScript
             };
             frame.Add(sprite);
 
+            // Connector Status Title
             var position = new Vector2(drawingSurface.SurfaceSize.X / 2, 5) + viewport.Position;
             sprite = new MySprite()
             { 
                 Type = SpriteType.TEXT,
                 Data = " | Connector Status | ",
                 Position = position,
-                RotationOrScale = 0.8f,
+                RotationOrScale = 1.0f,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
@@ -234,7 +278,8 @@ namespace IngameScript
             frame.Add(sprite);
             position += new Vector2(0, 30);
 
-            foreach (IMyShipConnector connector in connectors)
+            // Connector Status
+            foreach (IMyShipConnector connector in _connectors)
             {
                 if (connector.IsSameConstructAs(Me))
                 {
@@ -316,6 +361,38 @@ namespace IngameScript
             }
         }
 
+        private void drawSpritesPowerSystems(ref MySpriteDrawFrame frame, RectangleF viewport, IMyTextSurface drawingSurface)
+        {
+            // Add sprite for background
+            var sprite = new MySprite()
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Grid",
+                Position = viewport.Center,
+                Size = viewport.Size,
+                Color = drawingSurface.ScriptForegroundColor.Alpha(0.66f),
+                Alignment = TextAlignment.CENTER
+            };
+            frame.Add(sprite);
+
+            var position = new Vector2(drawingSurface.SurfaceSize.X / 2, 5) + viewport.Position;
+
+            // Power Systems Title
+            sprite = new MySprite()
+            {
+                Type = SpriteType.TEXT,
+                Data = " | Power Systems | ",
+                Position = position,
+                RotationOrScale = 1.0f,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            frame.Add(sprite);
+            position += new Vector2(0, 30);
+
+        }
+
 
         /// <summary>
         /// Calculates the Time-To-Stop of the current grid based on current thrust.
@@ -333,16 +410,32 @@ namespace IngameScript
 
             foreach (IMyThrust thruster in _thrusters)
             {
-                if (new Vector3D(thruster.GridThrustDirection) != velocities) { continue; }
-                currentStoppingThrust += thruster.MaxEffectiveThrust;
+                if (thruster.GridThrustDirection == Vector3I.Forward) { currentStoppingThrust += thruster.MaxEffectiveThrust; }
+
             }
 
             double currentStoppingAcceleration = currentStoppingThrust / _controlSeat.CalculateShipMass().TotalMass;
             double time = speed / currentStoppingAcceleration;
             double distance = time * speed;
-            result.Add(time);
-            result.Add(distance);
+            result.Add(Math.Round(time));
+            result.Add(Math.Round(distance));
             return result;
+        }
+
+        /// <summary>
+        /// Caculates the current fill percent of the ships total inventory space.
+        /// </summary>
+        /// <returns> a double as a percent</returns>
+        private double fillPercent()
+        {   
+            double totalPercent = 1.00f;
+
+            foreach (IMyTerminalBlock block in _cargoBlocks)
+            {
+                totalPercent *= block.GetInventory().CurrentVolume.RawValue / block.GetInventory().MaxVolume.RawValue;
+            }
+
+            return totalPercent * 100.0;
         }
     }
 }
